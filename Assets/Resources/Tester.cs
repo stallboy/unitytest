@@ -23,6 +23,14 @@ public class Tester : MonoBehaviour
         lightblue
     }
 
+
+    private static float last_logtime;
+
+    private int _col;
+    private int _row;
+
+    private Object abLoadAsyncAsset;
+
     private Dictionary<string, int> oldObjectStrs;
     private Dictionary<string, int> oldResourceStrs;
 
@@ -42,12 +50,12 @@ public class Tester : MonoBehaviour
     {
         _col = 0;
         _row = 0;
-        
+
 
         btn("load prefab", prefab_load);
         btn("load prefab instantiate", prefab_load_instantiate);
         btn("loadasync prefab instantiate", prefab_loadasync_instantiate);
-        btn("load prefab unload", 
+        btn("load prefab unload",
             "报错，失败。提示UnloadAsset may only be used on individual assets and can not be used on GameObject's / Components or AssetBundles",
             prefab_load_unload);
 
@@ -63,26 +71,27 @@ public class Tester : MonoBehaviour
         btn("dump all", dump_all);
         btn("switch scene", switch_scene);
         btn("test null", testnull);
+        btn("test gc", testgc);
 
         nextcol();
 
         btn("load texture", texture_load);
         btn("load texture instantiate",
-            "报错，但成功clone，提示Instantiating a non-readable 'MyTestTexture' texture is not allowed! Please mark the texture readable in the inspector or don't instantiate it.", 
+            "报错，但成功clone，提示Instantiating a non-readable 'MyTestTexture' texture is not allowed! Please mark the texture readable in the inspector or don't instantiate it.",
             texture_load_instantiate);
         btn("load texture unload",
-            "成功，之前加载的go贴图丢失", 
+            "成功，之前加载的go贴图丢失",
             texture_load_unload);
 
         next();
         btn("find texture object destroy",
             "成功，因为会成功clone啊，必然会成功destroy的",
             find_texture_object_destroy);
-        
+
         nextcol();
 
         btn("www", loadwww);
-        btn("www assetBundle", 
+        btn("www assetBundle",
             "如果没有调用AssetBundle.Unload(false), 所以如果调用多次，第二次会报错，同时返回www.assetBundle为null，The AssetBundle 'xxx' can't be loaded because another AssetBundle with the same files are already loaded",
             loadwww_assetBundle);
         btn("www assetBundle unload", loadwww_assetBundle_Unload);
@@ -95,6 +104,11 @@ public class Tester : MonoBehaviour
 
         next();
         btn("find assetBundle unload", find_assetBundle_Unload);
+        empty();
+        empty();
+        btn("black assetBundle loadAssetAsync unload",
+            "这个bundle是个完整的，不依赖其他。实验得出AssetBundle.LoadAsset的策略是尽力解析，如果能找到就直接加载了依赖",
+            black_assetBundle_LoadAssetAsync_Unload);
 
         nextcol();
 
@@ -105,18 +119,14 @@ public class Tester : MonoBehaviour
         btn("find texture assetBundle unload", find_texture_assetBundle_Unload);
 
         GUI.Label(new Rect(360, 500, 600, 100), GUI.tooltip);
-
     }
-
-    private int _col = 0;
-    private int _row = 0;
 
     private bool btn(string text, string tooltip = null)
     {
-        int w = 300;
+        var w = 300;
         var rect = new Rect(20 + (w + 40)*_col, 40 + _row*30, w, 20);
         _row++;
-        return tooltip == null ? GUI.Button(rect, text) : GUI.Button(rect, new GUIContent(text+"?", tooltip));
+        return tooltip == null ? GUI.Button(rect, text) : GUI.Button(rect, new GUIContent(text + "?", tooltip));
     }
 
     private void empty()
@@ -139,7 +149,9 @@ public class Tester : MonoBehaviour
     {
         if (btn(text))
         {
+            Log("========== " + text + " START ==========");
             action();
+            Log("========== " + text + " END ==========");
         }
     }
 
@@ -147,7 +159,9 @@ public class Tester : MonoBehaviour
     {
         if (btn(text, tooltip))
         {
+            Log("========== " + text + " START ==========");
             action();
+            Log("========== " + text + " END ==========");
         }
     }
 
@@ -175,7 +189,13 @@ public class Tester : MonoBehaviour
     {
         StartCoroutine(do_loadwww(3, "mytestprefabbundle", true));
     }
-    
+
+
+    private void black_assetBundle_LoadAssetAsync_Unload()
+    {
+        StartCoroutine(do_loadwww(3, "mytestblackbundle", true));
+    }
+
     private void loadwww_texture_assetBundle()
     {
         StartCoroutine(do_loadwww(1, "mytesttexturebundle"));
@@ -205,11 +225,11 @@ public class Tester : MonoBehaviour
 
         Log("assetbundle contains {0} NOT FOUND", asset);
     }
-    
 
-    private IEnumerator do_loadwww(int mode, string bundle, bool saveAsset=false)
-    {   
-        string path = Path.Combine(Application.streamingAssetsPath, bundle);
+
+    private IEnumerator do_loadwww(int mode, string bundle, bool saveAsset = false)
+    {
+        var path = Path.Combine(Application.streamingAssetsPath, bundle);
         if (!path.Contains("://"))
         {
             path = "file:///" + path; //文档上说windows要3个/，我实验是2个，3个都ok
@@ -220,16 +240,20 @@ public class Tester : MonoBehaviour
             yield return www;
             if (mode == 0)
             {
-                Log("loadwww DONE isDone={0}, error={1}, bytes.Count={2}, size={3}", www.isDone, www.error, www.bytes.Length, www.size);
+                Log("loadwww DONE isDone={0}, error={1}, bytes.Count={2}, size={3}", www.isDone, www.error,
+                    www.bytes.Length, www.size);
             }
             else if (mode == 1)
             {
-                Log("loadwww_assetBundle DONE isDone={0}, error={1}, bytes.Count={2}, size={3}, assetBundle={4}", www.isDone, www.error, www.bytes.Length, www.size, www.assetBundle);
+                Log("loadwww_assetBundle DONE isDone={0}, error={1}, bytes.Count={2}, size={3}, assetBundle={4}",
+                    www.isDone, www.error, www.bytes.Length, www.size, www.assetBundle);
                 //没有调用unload，下次再用会报错。并且返回的www.assetBundle为null
             }
             else if (mode == 2)
             {
-                Log("loadwww_assetBundle_Unload DONE isDone={0}, error={1}, bytes.Count={2}, size={3}, assetBundle={4}", www.isDone, www.error, www.bytes.Length, www.size, www.assetBundle);
+                Log(
+                    "loadwww_assetBundle_Unload DONE isDone={0}, error={1}, bytes.Count={2}, size={3}, assetBundle={4}",
+                    www.isDone, www.error, www.bytes.Length, www.size, www.assetBundle);
                 var ab = www.assetBundle;
                 foreach (var assetName in ab.GetAllAssetNames())
                 {
@@ -239,7 +263,9 @@ public class Tester : MonoBehaviour
             }
             else if (mode == 3)
             {
-                Log("loadwww_assetBundle_LoadAssetAync_Unload DONE isDone={0}, error={1}, bytes.Count={2}, size={3}, assetBundle={4}", www.isDone, www.error, www.bytes.Length, www.size, www.assetBundle);
+                Log(
+                    "loadwww_assetBundle_LoadAssetAync_Unload DONE isDone={0}, error={1}, bytes.Count={2}, size={3}, assetBundle={4}",
+                    www.isDone, www.error, www.bytes.Length, www.size, www.assetBundle);
                 var ab = www.assetBundle;
                 foreach (var assetName in ab.GetAllAssetNames())
                 {
@@ -250,7 +276,6 @@ public class Tester : MonoBehaviour
         }
     }
 
-    private Object abLoadAsyncAsset;
     private IEnumerator do_ab_loadassetasync(AssetBundle ab, string assetName, bool saveAsset)
     {
         Log("LoadAssetAsync START {0}", assetName);
@@ -289,10 +314,10 @@ public class Tester : MonoBehaviour
         Log("LoadAssetAsync START {0}", assetName);
         var a = ab.LoadAssetAsync(assetName);
         yield return a;
-        Object asset = a.asset;
+        var asset = a.asset;
         Log("LoadAssetAsync DONE {0} = {1}, Instantiate START", assetName, asset);
         ab.Unload(false);
-        Object.Instantiate(asset);
+        Instantiate(asset);
     }
 
 
@@ -336,7 +361,7 @@ public class Tester : MonoBehaviour
             }
         }
     }
-    
+
     private void find_object_instanitate()
     {
         var gos = FindObjectsOfType<GameObject>();
@@ -350,7 +375,6 @@ public class Tester : MonoBehaviour
             }
         }
     }
-
 
 
     private void prefab_load_unload()
@@ -370,7 +394,7 @@ public class Tester : MonoBehaviour
     {
         var tex = Resources.Load<Texture>("MyTestTexture");
         Log("load texture {0}", tex);
-        Object.Instantiate(tex); //会报异常，但会成功，不要这么用
+        Instantiate(tex); //会报异常，但会成功，不要这么用
     }
 
     private void find_texture_object_destroy()
@@ -538,7 +562,6 @@ public class Tester : MonoBehaviour
 
     private void dump(string prefix, ICollection<Object> objs, bool verbose, Dictionary<string, int> obj2strs = null)
     {
-        Log("-------------------");
         if (objs != null)
         {
             if (verbose)
@@ -569,7 +592,9 @@ public class Tester : MonoBehaviour
                     .Reverse()
                     .Take(20)
                     .Aggregate(", ====top: ",
-                        (old, kv) => old + ", " + (kv.Key == "AssetBundle" ? "<color=yellow>AssetBundle</color>" : kv.Key) + "=<color=yellow>" + kv.Value + "</color>");
+                        (old, kv) =>
+                            old + ", " + (kv.Key == "AssetBundle" ? "<color=yellow>AssetBundle</color>" : kv.Key) +
+                            "=<color=yellow>" + kv.Value + "</color>");
                 Log(prefix + " str=" + obj2strs.Count + topstr);
             }
         }
@@ -597,7 +622,9 @@ public class Tester : MonoBehaviour
             .Reverse()
             //.Take(20)
             .Aggregate(", ====toptype: ",
-                (old, kv) => old + ", " + (kv.type.Name == "AssetBundle" ? "<color=yellow>AssetBundle</color>" : kv.type.Name) + "=<color=yellow>" + kv.count + "</color>");
+                (old, kv) =>
+                    old + ", " + (kv.type.Name == "AssetBundle" ? "<color=yellow>AssetBundle</color>" : kv.type.Name) +
+                    "=<color=yellow>" + kv.count + "</color>");
 
         Log(prefix + " all=<color=yellow>" + objs.Count + "</color>, "
             + "name=<color=yellow>" + namemap.Count() + "</color>, " +
@@ -639,11 +666,12 @@ public class Tester : MonoBehaviour
 
     private void MakeSomeGarbage()
     {
-        Version vt;
+        Version vt = new Version();
         for (var i = 0; i < 10000; i++)
         {
             vt = new Version();
         }
+        Log("maked garbage " + vt);
     }
 
     private void testnull()
@@ -653,10 +681,10 @@ public class Tester : MonoBehaviour
         var dic = new Dictionary<EventSystem, EventSystem> {{aa, aa}};
 
         DestroyImmediate(aa);
-        
+
         foreach (var pair in dic)
         {
-            Log("==null:{0}, ReferenceEquals(null):{1}", pair.Key == null, System.Object.ReferenceEquals(pair.Key, null));
+            Log("==null:{0}, ReferenceEquals(null):{1}", pair.Key == null, ReferenceEquals(pair.Key, null));
         }
     }
 
@@ -680,15 +708,20 @@ public class Tester : MonoBehaviour
         return replaceWords;
     }
 
-
     public static void Log(string str)
     {
-        Debug.Log(Time.frameCount + " " + AddColor(str, LogColor.lightblue));
+        var cur = Time.time;
+        var mills = (int) ((cur - last_logtime)*1000);
+        Debug.Log(Time.frameCount + " " + mills + " " + AddColor(str, LogColor.lightblue));
+        last_logtime = cur;
     }
 
     public static void Log(object obj, params object[] replaceWords)
     {
-        Debug.Log(Time.frameCount + " " +
+        var cur = Time.time;
+        var mills = (int) ((cur - last_logtime)*1000);
+        Debug.Log(Time.frameCount + " " + mills + " " +
                   string.Format(AddColor(obj.ToString(), LogColor.lightblue), ReplaceWordList(replaceWords)));
+        last_logtime = cur;
     }
 }

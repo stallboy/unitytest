@@ -8,3 +8,6 @@ AssetBundleManifest:
     Info_1:
       Name: mytesttexturebundle
       Dependencies: {}
+    Info_2:
+      Name: mytestblackbundle
+      Dependencies: {}
