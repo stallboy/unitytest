@@ -1,0 +1,10 @@
+ManifestFileVersion: 0
+AssetBundleManifest:
+  AssetBundleInfos:
+    Info_0:
+      Name: mytestprefabbundle
+      Dependencies:
+        Dependency_0: mytesttexturebundle
+    Info_1:
+      Name: mytesttexturebundle
+      Dependencies: {}

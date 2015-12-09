@@ -1,0 +1,16 @@
+ManifestFileVersion: 0
+CRC: 2455402717
+Hashes:
+  AssetFileHash:
+    serializedVersion: 2
+    Hash: 820b0c9adbb08e3457a5d78682fd4abb
+  TypeTreeHash:
+    serializedVersion: 2
+    Hash: 7c0a6a24fc909dd95208e56e2ca96f9c
+HashAppended: 0
+ClassTypes:
+- Class: 28
+  Script: {instanceID: 0}
+Assets:
+- Assets/Resources/MyTestTexture.psd
+Dependencies: []

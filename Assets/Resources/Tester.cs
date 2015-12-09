@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using UnityEngine;
 using UnityEngine.EventSystems;
@@ -22,9 +23,8 @@ public class Tester : MonoBehaviour
         lightblue
     }
 
-    private static Dictionary<string, int> oldObjectStrs;
-    private static Dictionary<string, int> oldResourceStrs;
-    //unity会在内部资源释放时，回朔所有引用，置为null，所以不能用oldResources来检测。靠，我服, 只能用这个了。
+    private Dictionary<string, int> oldObjectStrs;
+    private Dictionary<string, int> oldResourceStrs;
 
     private void Start()
     {
@@ -40,89 +40,290 @@ public class Tester : MonoBehaviour
 
     private void OnGUI()
     {
-        if (GUI.Button(new Rect(20, 40, 180, 20), "load prefab"))
-        {
-            loadprefab();
-        }
-
-        if (GUI.Button(new Rect(20, 70, 180, 20), "load prefab instantiate"))
-        {
-            loadprefab_instantiate();
-        }
-
-        if (GUI.Button(new Rect(20, 100, 180, 20), "object destory"))
-        {
-            object_destory();
-        }
-
-        if (GUI.Button(new Rect(20, 130, 180, 20), "load prefab unload"))
-        {
-            loadprefab_unload();
-        }
-
-
-        if (GUI.Button(new Rect(240, 40, 180, 20), "load texture"))
-        {
-            loadpart_texture();
-        }
-
-        if (GUI.Button(new Rect(240, 70, 180, 20), "load texture instantiate"))
-        {
-            loadpart_texture_instantiate();
-        }
-
-        if (GUI.Button(new Rect(240, 100, 180, 20), "testure destory"))
-        {
-            texture_destory();
-        }
-
-        if (GUI.Button(new Rect(240, 130, 180, 20), "load texture unload"))
-        {
-            loadpart_texture_unload();
-        }
-
-
-
-        if (GUI.Button(new Rect(20, 190, 180, 20), "dump MyTest"))
-        {
-            diff(1, "MyTest");
-        }
-
-        if (GUI.Button(new Rect(20, 220, 180, 20), "unload"))
-        {
-            StartCoroutine(unload());
-        }
+        _col = 0;
+        _row = 0;
         
-        if (GUI.Button(new Rect(20, 250, 180, 20), "dump"))
-        {
-            diff(1);
-        }
 
-        if (GUI.Button(new Rect(20, 280, 180, 20), "switch scene"))
-        {
-            switchscene();
-        }
+        btn("load prefab", prefab_load);
+        btn("load prefab instantiate", prefab_load_instantiate);
+        btn("loadasync prefab instantiate", prefab_loadasync_instantiate);
+        btn("load prefab unload", 
+            "报错，失败。提示UnloadAsset may only be used on individual assets and can not be used on GameObject's / Components or AssetBundles",
+            prefab_load_unload);
 
-        if (GUI.Button(new Rect(20, 310, 180, 20), "test magic null"))
+        next();
+        btn("find gameobject destroy", find_object_destroy);
+        btn("find gameobject instantiate", find_object_instanitate);
+
+        empty();
+
+        btn("unload", unload);
+        btn("dump MyTest", dump_MyTest);
+        btn("dump stat", dump_stat);
+        btn("dump all", dump_all);
+        btn("switch scene", switch_scene);
+        btn("test null", testnull);
+
+        nextcol();
+
+        btn("load texture", texture_load);
+        btn("load texture instantiate",
+            "报错，但成功clone，提示Instantiating a non-readable 'MyTestTexture' texture is not allowed! Please mark the texture readable in the inspector or don't instantiate it.", 
+            texture_load_instantiate);
+        btn("load texture unload",
+            "成功，之前加载的go贴图丢失", 
+            texture_load_unload);
+
+        next();
+        btn("find texture object destroy",
+            "成功，因为会成功clone啊，必然会成功destroy的",
+            find_texture_object_destroy);
+        
+        nextcol();
+
+        btn("www", loadwww);
+        btn("www assetBundle", 
+            "如果没有调用AssetBundle.Unload(false), 所以如果调用多次，第二次会报错，同时返回www.assetBundle为null，The AssetBundle 'xxx' can't be loaded because another AssetBundle with the same files are already loaded",
+            loadwww_assetBundle);
+        btn("www assetBundle unload", loadwww_assetBundle_Unload);
+        btn("www assetBundle loadAssetAsync unload",
+            "连续调多次会加载多份asset！！！也就是说从不同bundle实例（但同一个bundle文件）中load出来的asset, unity认为不同。因为依赖texture的bundle，所以要先加载texture bundle，然后再加载这个，保存asset，然后把这两个bundle Unload，用asset来Instantiate就OK了",
+            loadwww_assetBundle_LoadAssetAsync_Unload);
+
+        btn("saved AB asset instantiate", abLoadAsyncAsset_instantiate);
+        btn("saved AB asset set null", abLoadAsyncAsset_null);
+
+        next();
+        btn("find assetBundle unload", find_assetBundle_Unload);
+
+        nextcol();
+
+        btn("www texture assetBundle", loadwww_texture_assetBundle);
+        btn("www texture assetBundle loadAssetAsync unload", loadwww_texture_assetBundle_loadAssetAsync_Unload);
+
+        next();
+        btn("find texture assetBundle unload", find_texture_assetBundle_Unload);
+
+        GUI.Label(new Rect(360, 500, 600, 100), GUI.tooltip);
+
+    }
+
+    private int _col = 0;
+    private int _row = 0;
+
+    private bool btn(string text, string tooltip = null)
+    {
+        int w = 300;
+        var rect = new Rect(20 + (w + 40)*_col, 40 + _row*30, w, 20);
+        _row++;
+        return tooltip == null ? GUI.Button(rect, text) : GUI.Button(rect, new GUIContent(text+"?", tooltip));
+    }
+
+    private void empty()
+    {
+        _row++;
+    }
+
+    private void next()
+    {
+        _row = 7;
+    }
+
+    private void nextcol()
+    {
+        _col++;
+        _row = 0;
+    }
+
+    private void btn(string text, Action action)
+    {
+        if (btn(text))
         {
-            testImpossibleNull();
+            action();
         }
     }
 
-    private void loadprefab()
+    private void btn(string text, string tooltip, Action action)
+    {
+        if (btn(text, tooltip))
+        {
+            action();
+        }
+    }
+
+    private void loadwww()
+    {
+        StartCoroutine(do_loadwww(0, "mytestprefabbundle"));
+    }
+
+    private void loadwww_assetBundle()
+    {
+        StartCoroutine(do_loadwww(1, "mytestprefabbundle"));
+    }
+
+    private void find_assetBundle_Unload()
+    {
+        find_ab_unload("Assets/Resources/MyTestPrefab.prefab");
+    }
+
+    private void loadwww_assetBundle_Unload()
+    {
+        StartCoroutine(do_loadwww(2, "mytestprefabbundle"));
+    }
+
+    private void loadwww_assetBundle_LoadAssetAsync_Unload()
+    {
+        StartCoroutine(do_loadwww(3, "mytestprefabbundle", true));
+    }
+    
+    private void loadwww_texture_assetBundle()
+    {
+        StartCoroutine(do_loadwww(1, "mytesttexturebundle"));
+    }
+
+    private void loadwww_texture_assetBundle_loadAssetAsync_Unload()
+    {
+        StartCoroutine(do_loadwww(3, "mytesttexturebundle"));
+    }
+
+    private void find_texture_assetBundle_Unload()
+    {
+        find_ab_unload("Assets/Resources/MyTestTexture.psd");
+    }
+
+    private void find_ab_unload(string asset)
+    {
+        foreach (var ab in Resources.FindObjectsOfTypeAll<AssetBundle>())
+        {
+            if (ab.GetAllAssetNames().Contains(asset.ToLower()))
+            {
+                Log("find AssetBundle that contains {0} START Unload", asset);
+                ab.Unload(false);
+                break;
+            }
+        }
+
+        Log("assetbundle contains {0} NOT FOUND", asset);
+    }
+    
+
+    private IEnumerator do_loadwww(int mode, string bundle, bool saveAsset=false)
+    {   
+        string path = Path.Combine(Application.streamingAssetsPath, bundle);
+        if (!path.Contains("://"))
+        {
+            path = "file:///" + path; //文档上说windows要3个/，我实验是2个，3个都ok
+        }
+        Log("loadwww START {0}", path);
+        using (var www = new WWW(path))
+        {
+            yield return www;
+            if (mode == 0)
+            {
+                Log("loadwww DONE isDone={0}, error={1}, bytes.Count={2}, size={3}", www.isDone, www.error, www.bytes.Length, www.size);
+            }
+            else if (mode == 1)
+            {
+                Log("loadwww_assetBundle DONE isDone={0}, error={1}, bytes.Count={2}, size={3}, assetBundle={4}", www.isDone, www.error, www.bytes.Length, www.size, www.assetBundle);
+                //没有调用unload，下次再用会报错。并且返回的www.assetBundle为null
+            }
+            else if (mode == 2)
+            {
+                Log("loadwww_assetBundle_Unload DONE isDone={0}, error={1}, bytes.Count={2}, size={3}, assetBundle={4}", www.isDone, www.error, www.bytes.Length, www.size, www.assetBundle);
+                var ab = www.assetBundle;
+                foreach (var assetName in ab.GetAllAssetNames())
+                {
+                    Log("include {0}", assetName);
+                }
+                ab.Unload(false);
+            }
+            else if (mode == 3)
+            {
+                Log("loadwww_assetBundle_LoadAssetAync_Unload DONE isDone={0}, error={1}, bytes.Count={2}, size={3}, assetBundle={4}", www.isDone, www.error, www.bytes.Length, www.size, www.assetBundle);
+                var ab = www.assetBundle;
+                foreach (var assetName in ab.GetAllAssetNames())
+                {
+                    StartCoroutine(do_ab_loadassetasync(ab, assetName, saveAsset));
+                    break;
+                }
+            }
+        }
+    }
+
+    private Object abLoadAsyncAsset;
+    private IEnumerator do_ab_loadassetasync(AssetBundle ab, string assetName, bool saveAsset)
+    {
+        Log("LoadAssetAsync START {0}", assetName);
+        var a = ab.LoadAssetAsync(assetName);
+        yield return a;
+        Log("LoadAssetAsync DONE {0} = {1}", assetName, a.asset);
+        if (saveAsset)
+        {
+            abLoadAsyncAsset = a.asset;
+            Log("Saved AB asset {0}", abLoadAsyncAsset);
+        }
+        ab.Unload(false);
+    }
+
+    private void abLoadAsyncAsset_instantiate()
+    {
+        if (abLoadAsyncAsset != null)
+        {
+            Log("Saved AB asset Instantiate {0}", abLoadAsyncAsset);
+            Instantiate(abLoadAsyncAsset);
+        }
+    }
+
+    private void abLoadAsyncAsset_null()
+    {
+        if (abLoadAsyncAsset != null)
+        {
+            Log("Saved AB asset Set NULL {0}", abLoadAsyncAsset);
+
+            abLoadAsyncAsset = null;
+        }
+    }
+
+    private IEnumerator do_ab_loadassetasync_instantiate(AssetBundle ab, string assetName)
+    {
+        Log("LoadAssetAsync START {0}", assetName);
+        var a = ab.LoadAssetAsync(assetName);
+        yield return a;
+        Object asset = a.asset;
+        Log("LoadAssetAsync DONE {0} = {1}, Instantiate START", assetName, asset);
+        ab.Unload(false);
+        Object.Instantiate(asset);
+    }
+
+
+    private void prefab_load()
     {
         var go = Resources.Load<GameObject>("MyTestPrefab");
         Log("load prefab {0}", go);
     }
 
-    private void loadprefab_instantiate()
+    private void prefab_load_instantiate()
     {
         var go = Resources.Load<GameObject>("MyTestPrefab");
         Log("load prefab {0}", go);
         Instantiate(go);
     }
 
-    private void object_destory()
+    private void prefab_loadasync_instantiate()
+    {
+        StartCoroutine(do_prefab_loadasync_instantiate());
+    }
+
+    private IEnumerator do_prefab_loadasync_instantiate()
+    {
+        var go = Resources.LoadAsync<GameObject>("MyTestPrefab");
+        Log("loadasync prefab START {0}", go);
+        yield return go;
+        Log("loadasync prefab DONE {0}", go.asset);
+        Instantiate(go.asset);
+    }
+
+    private void find_object_destroy()
     {
         var gos = FindObjectsOfType<GameObject>();
         foreach (var go in gos)
@@ -135,28 +336,44 @@ public class Tester : MonoBehaviour
             }
         }
     }
+    
+    private void find_object_instanitate()
+    {
+        var gos = FindObjectsOfType<GameObject>();
+        foreach (var go in gos)
+        {
+            if (go.name.StartsWith("MyTestPrefab"))
+            {
+                Log("find gameobject {0}", go);
+                Instantiate(go); //成功
+                break;
+            }
+        }
+    }
 
-    private void loadprefab_unload()
+
+
+    private void prefab_load_unload()
     {
         var go = Resources.Load<GameObject>("MyTestPrefab");
         Log("load prefab {0}", go);
         Resources.UnloadAsset(go); //会报异常，然后失败
     }
 
-    private void loadpart_texture()
+    private void texture_load()
     {
         var tex = Resources.Load<Texture>("MyTestTexture");
         Log("load texture {0}", tex);
     }
 
-    private void loadpart_texture_instantiate()
+    private void texture_load_instantiate()
     {
         var tex = Resources.Load<Texture>("MyTestTexture");
         Log("load texture {0}", tex);
         Object.Instantiate(tex); //会报异常，但会成功，不要这么用
     }
 
-    private void texture_destory()
+    private void find_texture_object_destroy()
     {
         var gos = FindObjectsOfType<Texture>();
         foreach (var go in gos)
@@ -170,35 +387,47 @@ public class Tester : MonoBehaviour
         }
     }
 
-    private void loadpart_texture_unload()
+    private void texture_load_unload()
     {
         var tex = Resources.Load<Texture>("MyTestTexture");
         Log("load texture {0}", tex);
         Resources.UnloadAsset(tex); //这个会卸载掉loadprefab加载进来的gameobject的贴图。
     }
 
-    private void switchscene()
+    private void switch_scene()
     {
         Log("switch scene START ==================================");
         Application.LoadLevel("unitytest2");
         Log("switch scene DONE");
     }
 
-
-    private void instantiate()
+    private void unload()
     {
-        var go = GameObject.Find("Archer_Emiya");
-        var anim = go.GetComponent<Animation>();
-        Instantiate(anim);
+        StartCoroutine(do_unload());
     }
 
-    private IEnumerator unload()
+    private IEnumerator do_unload()
     {
         Log("UnloadUnusedAssets START");
         yield return Resources.UnloadUnusedAssets();
         Log("UnloadUnusedAssets DONE, GC.Collect START");
         GC.Collect();
         Log("UnloadUnusedAssets -> GC.Collect DONE");
+    }
+
+    private void dump_MyTest()
+    {
+        diff(1, "MyTest");
+    }
+
+    private void dump_stat()
+    {
+        diff(1);
+    }
+
+    private void dump_all()
+    {
+        diff(1, "");
     }
 
     private void diff(int mode, string filter = null)
@@ -247,16 +476,27 @@ public class Tester : MonoBehaviour
                 Log("dump filter = {0} START", filter);
                 foreach (var o in objectStrs)
                 {
-                    if (o.Key.StartsWith(filter) || o.Key.StartsWith("yizi01"))
+                    if (o.Key.ToLower().StartsWith(filter.ToLower()) || o.Key.StartsWith("yizi01"))
                     {
                         Log("dump obj {0} = {1}", o.Key, o.Value);
                     }
                 }
                 foreach (var o in resourceStrs)
                 {
-                    if (o.Key.StartsWith(filter) || o.Key.StartsWith("yizi01"))
+                    if (o.Key.ToLower().StartsWith(filter.ToLower()) || o.Key.StartsWith("yizi01"))
                     {
                         Log("dump res {0} = {1}", o.Key, o.Value);
+                    }
+                }
+                foreach (var ab in Resources.FindObjectsOfTypeAll<AssetBundle>())
+                {
+                    //Log("dump ab {0}", ab.name);
+                    foreach (var assetName in ab.GetAllAssetNames())
+                    {
+                        if (assetName.ToLower().Contains(filter.ToLower()) || assetName.Contains("yizi01"))
+                        {
+                            Log("dump res asset {0} in ab {1}", assetName, ab);
+                        }
                     }
                 }
                 Log("dump filter = {0} DONE", filter);
@@ -329,7 +569,7 @@ public class Tester : MonoBehaviour
                     .Reverse()
                     .Take(20)
                     .Aggregate(", ====top: ",
-                        (old, kv) => old + ", " + kv.Key + "=<color=yellow>" + kv.Value + "</color>");
+                        (old, kv) => old + ", " + (kv.Key == "AssetBundle" ? "<color=yellow>AssetBundle</color>" : kv.Key) + "=<color=yellow>" + kv.Value + "</color>");
                 Log(prefix + " str=" + obj2strs.Count + topstr);
             }
         }
@@ -355,9 +595,9 @@ public class Tester : MonoBehaviour
 
         var toptype = typemap.OrderBy(t => t.count)
             .Reverse()
-            .Take(20)
+            //.Take(20)
             .Aggregate(", ====toptype: ",
-                (old, kv) => old + ", " + kv.type.Name + "=<color=yellow>" + kv.count + "</color>");
+                (old, kv) => old + ", " + (kv.type.Name == "AssetBundle" ? "<color=yellow>AssetBundle</color>" : kv.type.Name) + "=<color=yellow>" + kv.count + "</color>");
 
         Log(prefix + " all=<color=yellow>" + objs.Count + "</color>, "
             + "name=<color=yellow>" + namemap.Count() + "</color>, " +
@@ -376,7 +616,7 @@ public class Tester : MonoBehaviour
         var e = map.GetEnumerator();
         while (e.MoveNext())
         {
-            var i = e.Current.Key;
+            //var i = e.Current.Key;
             //Debug.Log(e.Current);
         }
     }
@@ -400,27 +640,23 @@ public class Tester : MonoBehaviour
     private void MakeSomeGarbage()
     {
         Version vt;
-
-        // Create objects and release them to fill up memory with unused objects.
         for (var i = 0; i < 10000; i++)
         {
             vt = new Version();
         }
     }
 
-    private void testImpossibleNull()
+    private void testnull()
     {
         var go = GameObject.Find("/Main Camera");
         var aa = go.AddComponent<EventSystem>();
-        var bb = go.AddComponent<EventSystem>();
-        var dic = new Dictionary<EventSystem, EventSystem> {{aa, aa}, {bb, bb}};
+        var dic = new Dictionary<EventSystem, EventSystem> {{aa, aa}};
 
         DestroyImmediate(aa);
-        DestroyImmediate(bb);
-
+        
         foreach (var pair in dic)
         {
-            Debug.Log(pair.Key == null);
+            Log("==null:{0}, ReferenceEquals(null):{1}", pair.Key == null, System.Object.ReferenceEquals(pair.Key, null));
         }
     }
 
