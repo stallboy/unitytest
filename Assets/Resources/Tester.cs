@@ -9,21 +9,6 @@ using Object = UnityEngine.Object;
 
 public class Tester : MonoBehaviour
 {
-    public enum LogColor
-    {
-        blue,
-        magenta,
-        maroon,
-        orange,
-        red,
-        purple,
-        yellow,
-        white,
-        cyan,
-        lightblue
-    }
-
-
     private static float last_logtime;
 
     private int _col;
@@ -66,7 +51,7 @@ public class Tester : MonoBehaviour
         empty();
 
         btn("unload", unload);
-        btn("dump MyTest", dump_MyTest);
+        btn("dump mytest", dump_mytest);
         btn("dump stat", dump_stat);
         btn("dump all", dump_all);
         btn("switch scene", switch_scene);
@@ -104,6 +89,8 @@ public class Tester : MonoBehaviour
 
         next();
         btn("find assetBundle unload", find_assetBundle_Unload);
+        btn("dump ab manifest", dump_ab_manifest);
+        btn("test WWW resource limited?", test_WWW_resouce_limited);
         empty();
         empty();
         btn("black assetBundle loadAssetAsync unload",
@@ -180,6 +167,14 @@ public class Tester : MonoBehaviour
         find_ab_unload("Assets/Resources/MyTestPrefab.prefab");
     }
 
+    private void test_WWW_resouce_limited()
+    {
+        for (int i = 0; i < 5000; i++)
+        {
+            StartCoroutine(do_loadwww(0, "mytestprefabbundle"));
+        }
+    }
+
     private void loadwww_assetBundle_Unload()
     {
         StartCoroutine(do_loadwww(2, "mytestprefabbundle"));
@@ -226,6 +221,10 @@ public class Tester : MonoBehaviour
         Log("assetbundle contains {0} NOT FOUND", asset);
     }
 
+    private void dump_ab_manifest()
+    {
+        StartCoroutine(do_loadwww(2, "StreamingAssets"));
+    }
 
     private IEnumerator do_loadwww(int mode, string bundle, bool saveAsset = false)
     {
@@ -258,6 +257,15 @@ public class Tester : MonoBehaviour
                 foreach (var assetName in ab.GetAllAssetNames())
                 {
                     Log("include {0}", assetName);
+
+                    if (assetName == "assetbundlemanifest")
+                    {
+                        var manifest = ab.LoadAsset<AssetBundleManifest>(assetName);
+                        foreach (var bn in manifest.GetAllAssetBundles())
+                        {
+                            Log( "manifest " + bn + " dep: " +manifest.GetAllDependencies(bn).Aggregate("", (a, d) => a + "," + d));
+                        }
+                    }
                 }
                 ab.Unload(false);
             }
@@ -439,7 +447,7 @@ public class Tester : MonoBehaviour
         Log("UnloadUnusedAssets -> GC.Collect DONE");
     }
 
-    private void dump_MyTest()
+    private void dump_mytest()
     {
         diff(1, "MyTest");
     }
@@ -657,14 +665,14 @@ public class Tester : MonoBehaviour
             map.Add(i, "aaaaaaa" + i);
         }
 
-        MakeSomeGarbage();
+        make_garbage();
         Log("Memory used before collection {0}", GC.GetTotalMemory(false));
 
         GC.Collect();
         Log("Memory used after full collection {0}", GC.GetTotalMemory(false));
     }
 
-    private void MakeSomeGarbage()
+    private void make_garbage()
     {
         Version vt = new Version();
         for (var i = 0; i < 10000; i++)
@@ -687,41 +695,23 @@ public class Tester : MonoBehaviour
             Log("==null:{0}, ReferenceEquals(null):{1}", pair.Key == null, ReferenceEquals(pair.Key, null));
         }
     }
-
-    private static string AddColor(string word, LogColor color, bool bold = false)
-    {
-        var formatStr = string.Format("<color={0}>{1}</color>", color, word);
-        if (bold)
-        {
-            formatStr = "<b>" + formatStr + "</b>";
-        }
-        return formatStr;
-    }
-
-    private static object[] ReplaceWordList(object[] replaceWords)
-    {
-        for (var i = 0; i < replaceWords.Length; i++)
-        {
-            replaceWords[i] = AddColor(replaceWords[i] == null ? "null" : replaceWords[i].ToString(), LogColor.yellow,
-                true);
-        }
-        return replaceWords;
-    }
-
-    public static void Log(string str)
+    
+    public static void Log(object obj, params object[] args)
     {
         var cur = Time.time;
         var mills = (int) ((cur - last_logtime)*1000);
-        Debug.Log(Time.frameCount + " " + mills + " " + AddColor(str, LogColor.lightblue));
+        Debug.Log(Time.frameCount + " " + mills + " " + string.Format(color(obj.ToString(), "lightblue"), colors(args)));
         last_logtime = cur;
     }
 
-    public static void Log(object obj, params object[] replaceWords)
+    private static object[] colors(params object[] args)
     {
-        var cur = Time.time;
-        var mills = (int) ((cur - last_logtime)*1000);
-        Debug.Log(Time.frameCount + " " + mills + " " +
-                  string.Format(AddColor(obj.ToString(), LogColor.lightblue), ReplaceWordList(replaceWords)));
-        last_logtime = cur;
+        return args.Select(a => (object)color( a != null ? a.ToString() : "null", "yellow", true)).ToArray();
+    }
+
+    private static string color(string word, string color, bool bold = false)
+    {
+        var str = string.Format("<color={0}>{1}</color>", color, word);
+        return bold ? "<b>" + str + "</b>" : str;
     }
 }
