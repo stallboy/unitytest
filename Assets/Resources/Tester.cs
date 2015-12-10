@@ -55,8 +55,9 @@ public class Tester : MonoBehaviour
         btn("dump stat", dump_stat);
         btn("dump all", dump_all);
         btn("switch scene", switch_scene);
-        btn("test null", testnull);
-        btn("test gc", testgc);
+        btn("test null", "unity重载了Object的==", testnull);
+        btn("test gc", "GC.Collect的确是同步的", testgc);
+        btn("test WWW resource limited?", "WWW需要限制，底层没做，很可能是直接起了线程", test_WWW_resouce_limited);
 
         nextcol();
 
@@ -90,7 +91,6 @@ public class Tester : MonoBehaviour
         next();
         btn("find assetBundle unload", find_assetBundle_Unload);
         btn("dump ab manifest", dump_ab_manifest);
-        btn("test WWW resource limited?", test_WWW_resouce_limited);
         empty();
         empty();
         btn("black assetBundle loadAssetAsync unload",
