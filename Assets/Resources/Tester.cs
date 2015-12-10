@@ -284,11 +284,16 @@ public class Tester : MonoBehaviour
         }
     }
 
+    //private int loadcount = 1;
     private IEnumerator do_ab_loadassetasync(AssetBundle ab, string assetName, bool saveAsset)
     {
         Log("LoadAssetAsync START {0}", assetName);
         var a = ab.LoadAssetAsync(assetName);
         yield return a;
+
+        //if (loadcount++ < 3)
+        //    StartCoroutine(do_ab_loadassetasync(ab, assetName, saveAsset)); //多次LoadAssetAsync，是ok的。不会多加载
+
         Log("LoadAssetAsync DONE {0} = {1}", assetName, a.asset);
         if (saveAsset)
         {
