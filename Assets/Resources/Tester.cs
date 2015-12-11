@@ -50,7 +50,7 @@ public class Tester : MonoBehaviour
 
         empty();
 
-        btn("unload", unload);
+        btn("UnloadUnusedAssets", UnloadUnusedAssets);
         btn("dump mytest", dump_mytest);
         btn("dump stat", dump_stat);
         btn("dump all", dump_all);
@@ -58,7 +58,7 @@ public class Tester : MonoBehaviour
         btn("test null", "unity重载了Object的==", testnull);
         btn("test gc", "GC.Collect的确是同步的", testgc);
         btn("test WWW resource limited?", "WWW需要限制，底层没做，很可能是直接起了线程", test_WWW_resouce_limited);
-
+        
         nextcol();
 
         btn("load texture", texture_load);
@@ -438,7 +438,7 @@ public class Tester : MonoBehaviour
         Log("switch scene DONE");
     }
 
-    private void unload()
+    private void UnloadUnusedAssets()
     {
         StartCoroutine(do_unload());
     }
@@ -447,9 +447,7 @@ public class Tester : MonoBehaviour
     {
         Log("UnloadUnusedAssets START");
         yield return Resources.UnloadUnusedAssets();
-        Log("UnloadUnusedAssets DONE, GC.Collect START");
-        GC.Collect();
-        Log("UnloadUnusedAssets -> GC.Collect DONE");
+        Log("UnloadUnusedAssets DONE");
     }
 
     private void dump_mytest()
@@ -476,7 +474,7 @@ public class Tester : MonoBehaviour
         {
             objects[o] = o;
             var str = o.ToString();
-            var oldcount = 0;
+            int oldcount;
             objectStrs.TryGetValue(str, out oldcount);
             objectStrs[str] = oldcount + 1;
         }
@@ -558,7 +556,7 @@ public class Tester : MonoBehaviour
         {
             var obj = o.Key;
             var newCount = o.Value;
-            var oldCount = 0;
+            int oldCount;
             old.TryGetValue(obj, out oldCount);
 
             if (newCount > oldCount && !obj.StartsWith("TextMesh"))

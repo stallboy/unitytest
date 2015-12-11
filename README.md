@@ -81,16 +81,7 @@ test code for unity，实际使用中只用异步io。
 
 ### Resources.UnloadUnusedAssets
 
-* GameObject，Component的卸载办法。
-
-* StartCoroutine(Unload)。
-
-    private static IEnumerator Unload()
-    {
-        yield return Resources.UnloadUnusedAssets();
-        GC.Collect();
-    }
-
+* GameObject的卸载办法，这个没提供单独的卸载方法。
 
 
 ### 别对asset使用Object.Destroy
