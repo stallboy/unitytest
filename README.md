@@ -34,7 +34,7 @@ test code for unity，实际使用中只用异步io。
 ## 资源加载
 
 ### WWW
-* 要不要起多个WWW，来加载资源？（TODO测试）
+* 还是设置个限制吧，在window测试，当启动1000个WWW，可能会启动200个左右的线程，会提示too many thread错误
 
 ### AssetBundle.LoadAssetAsync
 * 可能也可以用AssetBundle.LoadAsset，因为没io，只uncompress，cpu消耗型，但保险起见用async版本，可充分利用多线程吧（TODO测试）
@@ -45,6 +45,7 @@ test code for unity，实际使用中只用异步io。
 
 ### Resources.LoadAsync
 * 这个会直接解决依赖的。
+* 以上2个api，当name不存在时，返回的req.asset为null
 
 ### 同步方式
 * 上面都是Async的方式，如果是inEditor则可以直接用AssetDatabase.LoadAssetAtPath 来同步加载

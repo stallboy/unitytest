@@ -57,7 +57,7 @@ public class Tester : MonoBehaviour
         btn("switch scene", switch_scene);
         btn("test null", "unity重载了Object的==", testnull);
         btn("test gc", "GC.Collect的确是同步的", testgc);
-        btn("test WWW resource limited?", "WWW需要限制，底层没做，很可能是直接起了线程", test_WWW_resouce_limited);
+        btn("test WWW resource limited?", "还是设置个限制吧，在window测试，当启动1000个WWW，可能会启动200个左右的线程，会提示too many thread错误", test_WWW_resouce_limited);
         
         nextcol();
 
@@ -169,7 +169,7 @@ public class Tester : MonoBehaviour
 
     private void test_WWW_resouce_limited()
     {
-        for (int i = 0; i < 5000; i++)
+        for (int i = 0; i < 1000; i++)
         {
             StartCoroutine(do_loadwww(0, "mytestprefabbundle"));
         }
