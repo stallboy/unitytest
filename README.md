@@ -34,7 +34,7 @@ test code for unity，实际使用中只用异步io。
 ## 资源加载
 
 ### WWW
-* 还是设置个限制吧，在window测试，当启动1000个WWW，可能会启动200个左右的线程，会提示too many thread错误
+* 还是设置个限制吧，在window测试，当启动1000个WWW，可能会启动200个左右的线程，如果在editormode下启动10000个会提示too many thread错误
 
 ### AssetBundle.LoadAssetAsync
 * 可能也可以用AssetBundle.LoadAsset，因为没io，只uncompress，cpu消耗型，但保险起见用async版本，可充分利用多线程吧（TODO测试）
@@ -42,6 +42,13 @@ test code for unity，实际使用中只用异步io。
 * 如果这个prefab的bundle依赖texture的bundle，所以要先加载texture bundle，然后再加载这个，保存asset，然后把这两个bundle Unload，之后用asset来Instantiate是ok的。
 * 也就是说unity在prefabBundle.LoadAssetAsync(prefab)的时候会从已加载的assetBundle中寻找依赖然后把依赖的textureBundle的asset给加载出来。
 * 所以只要保存这个asset就行了。
+
+* 如果A，C依赖B，A加载拿到a asset(同时b应该也加载了)，然后A，B释放了；然后加载C，这时好像还要加载B，然后是不是b就有2份了？ 
+
+    * 是这样的，这真是没办法，
+    * 加载C的时候，unity无法分析到其依赖的B 的内容b已经有了，没法找到，必须重复加载B，这样2份b。
+
+
 
 ### Resources.LoadAsync
 * 这个会直接解决依赖的。
