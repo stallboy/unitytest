@@ -19,7 +19,8 @@ test code for unity，实际使用中只用异步io。
 部分属于scene里的对象，被Object.FindObjectsOfType管理，
 部分是资源Asset对象
 
-2. AssetBundle，Mesh，Texture，Shader等资源Asset对象
+2. AssetBundle，Mesh，Texture，Shader, Material, Prefab等资源Asset对象，
+Prefab会包含GameObject，Component等资源。
 
 我们叫场景对象和资源对象吧，可以猜测有2个对象管理者。
 
@@ -89,16 +90,19 @@ test code for unity，实际使用中只用异步io。
 
 ### Resources.UnloadUnusedAssets
 
-* GameObject的卸载办法，这个没提供单独的卸载方法。
+* Prefab依赖的Mesh，Texture资源如果不是特意先load是没有办法可以主动卸载的。只能通过这个来卸载。
 
+* Prefab里
 
-### 别对asset使用Object.Destroy
+* 这个应该是比较费的，只适合在场景加载或ui加载时候做做。
+
+### Object.Destroy
 
 * 如果调用Object.Destroy(asset) 会报异常
 
     Destroying assets is not permitted to avoid data loss.
     If you really want to remove an asset use DestroyImmediate (theObject, true);
 
-* Object.Destroy 用于清理场景对象。
+* Object.Destroy 用于清理场景GameObject，或场景GameObject里的Component
 
 

@@ -43,9 +43,12 @@ public class Tester : MonoBehaviour
         btn("load prefab unload",
             "报错，失败。提示UnloadAsset may only be used on individual assets and can not be used on GameObject's / Components or AssetBundles",
             prefab_load_unload);
+        btn("load prefab destroy",
+            "报错，失败。提示Destroying assets is not permitted to avoid data loss.",
+            prefab_load_destroy);
 
         next();
-        btn("find gameobject destroy", find_object_destroy);
+        btn("find gameobject destroy", "destroy之后那些Prefab和其依赖的资源也都还留着，然后再点击UnloadUnusedAssets才能删除Prefab和其依赖的资源", find_object_destroy);
         btn("find gameobject instantiate", find_object_instanitate);
 
         empty();
@@ -396,6 +399,15 @@ public class Tester : MonoBehaviour
         Log("load prefab {0}", go);
         Resources.UnloadAsset(go); //会报异常，然后失败
     }
+
+
+    private void prefab_load_destroy()
+    {
+        var go = Resources.Load<GameObject>("MyTestPrefab");
+        Log("load prefab {0}", go);
+        Object.Destroy(go); //会报异常，然后失败
+    }
+
 
     private void texture_load()
     {
