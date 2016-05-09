@@ -73,7 +73,7 @@ Prefab会包含GameObject，Component等资源。
 ### Resources.UnloadAsset
 
 * 如果是Texture这些没问题，资源会被unload。注意假设已经load了GameObject，go里依赖这个texture，那么
-调用UnloadAsset（texture）后，go里也没贴图了。很悲惨，不会自动再加载的。
+调用UnloadAsset（texture）后，按照文档unity应该要重新reload的。测试在editor下，必须切换一下后才能ok。
 
 * 如果是GameObject，Component，AssetBundle会报错，
 
