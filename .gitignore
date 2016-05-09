@@ -1,0 +1,6 @@
+Temp
+Library
+.vs
+*.csproj
+unitytest.CSharp.csproj
+unitytest.CSharp.Editor.csproj
