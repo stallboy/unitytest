@@ -55,6 +55,7 @@ public class Tester : MonoBehaviour
 
         btn("UnloadUnusedAssets", UnloadUnusedAssets);
         btn("dump mytest", dump_mytest);
+        btn("dump Dialog", dump_dialog);
         btn("dump stat", dump_stat);
         btn("dump all", dump_all);
         btn("switch scene", switch_scene);
@@ -71,11 +72,17 @@ public class Tester : MonoBehaviour
         btn("load texture unload",
             "成功，之前加载的go贴图丢失",
             texture_load_unload);
-
-        next();
+        
         btn("find texture object destroy",
             "成功，因为会成功clone啊，必然会成功destroy的",
             find_texture_object_destroy);
+
+
+        next();
+        btn("test clip", clip_test);
+        btn("play clip", clip_play);
+        btn("set clip null", clip_null);
+
 
         nextcol();
 
@@ -154,6 +161,54 @@ public class Tester : MonoBehaviour
             Log("========== " + text + " END ==========");
         }
     }
+
+    private AudioClip clip;
+
+    void clip_test()
+    {
+        StartCoroutine(loadclip());
+    }
+
+    IEnumerator loadclip()
+    {
+        Debug.Log("load audiotest ab");
+        var www = new WWW("file:///" + Application.dataPath + "/StreamingAssets/audiotest");
+        yield return www;
+        var ab = www.assetBundle;
+        Debug.Log("load audiotest ab done");
+        www.Dispose();
+
+        string asset = "";
+        foreach (var allAssetName in ab.GetAllAssetNames())
+        {
+            Debug.Log("    asset: " + allAssetName);
+            asset = allAssetName;
+        }
+
+        var req = ab.LoadAssetAsync<AudioClip>(asset);
+        yield return req;
+        clip = req.asset as AudioClip;
+        Debug.Log("loaded " + clip);
+        ab.Unload(false);
+
+        var audiosource = GetComponent<AudioSource>();
+        audiosource.PlayOneShot(clip);
+
+    }
+
+
+    void clip_play()
+    {
+        var audiosource = GetComponent<AudioSource>();
+        audiosource.PlayOneShot(clip);
+    }
+
+    void clip_null()
+    {
+        clip = null;
+    }
+
+
 
     private void loadwww()
     {
@@ -465,6 +520,10 @@ public class Tester : MonoBehaviour
     private void dump_mytest()
     {
         diff(1, "MyTest");
+    }
+    private void dump_dialog()
+    {
+        diff(1, "Dialog");
     }
 
     private void dump_stat()

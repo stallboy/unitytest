@@ -4,3 +4,4 @@ Library
 *.csproj
 unitytest.CSharp.csproj
 unitytest.CSharp.Editor.csproj
+obj/Debug/DesignTimeResolveAssemblyReferencesInput.cache
